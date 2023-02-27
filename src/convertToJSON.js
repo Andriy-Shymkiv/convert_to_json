@@ -1,29 +1,32 @@
 const fs = require('fs');
+const path = require('path');
 
-const convertToJSON = (filePath) => {
-  const data = fs.readFileSync(filePath, 'utf8').split('\n');
-  const result = {};
+const inputFilePath = 'src/data.txt';
+const outputFilePath = 'src/output.json';
 
-  data.forEach((line) => {
-    const [key, value] = line.split(' = ');
-    const keys = key.split('.');
+const inputData = fs.readFileSync(inputFilePath, 'utf8').trim().split('\n');
 
-    let current = result;
+const outputData = {};
 
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
+inputData.forEach((line) => {
+  const [key, value] = line.split(' = ');
+  const keys = key.split('.');
+  let currentObj = outputData;
 
-      if (i === keys.length - 1) {
-        current[key] = value;
+  keys.forEach((keyPart, index) => {
+    if (!currentObj[keyPart]) {
+      if (index === keys.length - 1) {
+        currentObj[keyPart] = value;
       } else {
-        current[key] = current[key] || {};
-        current = current[key];
+        currentObj[keyPart] = {};
       }
+    } else if (typeof currentObj[keyPart] === 'string') {
+      currentObj[keyPart] = [currentObj[keyPart], value];
+    } else {
+      currentObj[keyPart][Object.keys(currentObj[keyPart]).length] = value;
     }
+    currentObj = currentObj[keyPart];
   });
+});
 
-  return JSON.stringify(result, null, 2);
-};
-
-const data = convertToJSON('./src/data.txt');
-console.log(data); // node src/convertToJSON.js
+fs.writeFileSync(outputFilePath, JSON.stringify(outputData, null, 2));
